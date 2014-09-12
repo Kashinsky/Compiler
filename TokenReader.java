@@ -12,10 +12,18 @@ public class TokenReader implements StreamReader<Token> {
     private LineIO lio;              // a StreamReader<Character>
     private Lazy<Character> lzin;   // a Lazy<Character> based on lio
     private static final char NL = '\n';    // the newline character
-
+    private Map<String,Token.Val> rwtab;
     public TokenReader(LineIO lio) {
-	this.lio = lio;
-	lzin = new Lazy<Character>(lio);
+	    this.lio = lio;
+	    lzin = new Lazy<Character>(lio);
+        buildMap();
+    }
+
+    private void buildMap() {
+        this.rwtab = new HashMap<String, Token.Val>();
+        for(Token.Val val : EnumSet.range(Token.Val.AND, Token.Val.WITH)) {
+            rwtab.put(val.toString(),val);
+        }
     }
 
     public Character cur() {
@@ -94,8 +102,8 @@ public class TokenReader implements StreamReader<Token> {
                 case ':': AA(ch); return s_COLON;
             }
             if (Character.isLetter(ch)) {
-                AAV(ch, Token.Val.ERROR);
-                return  null;
+                AA(ch);
+                return  s_ID;
             }
             // ignore anything else
             adv();
@@ -152,7 +160,26 @@ public class TokenReader implements StreamReader<Token> {
         }
 
     };
-
+    
+    private FSMState s_ID = new FSMState() {
+        public FSMState next() {
+            Character ch = cur();
+            tok.lno = lno();
+            if(Character.isLetter(ch)||Character.isDigit(ch)||ch=='_') {
+                AA(ch);
+                return s_ID;
+            }
+            String id = (tok.str.toString());
+            Token.Val rwval = rwtab.get(id.toUpperCase());
+            if(rwval == null) {
+                VAL(Token.Val.ID);
+                return null;
+            }
+            VAL(rwval);
+            tok.str = new StringBuffer(id);
+            return null;
+        }
+    };
 //     private FSMState
 
     public Token read() {
