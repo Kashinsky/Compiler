@@ -17,7 +17,7 @@ public class TokenReader implements StreamReader<Token> {
 	    this.lio = lio;
 	    lzin = new Lazy<Character>(lio);
         buildMap();
-    }
+   }
 
     private void buildMap() {
         this.rwtab = new HashMap<String, Token.Val>();
@@ -72,6 +72,9 @@ public class TokenReader implements StreamReader<Token> {
         tok.val = v;
     }
 
+    public void PUT(Character ch) {
+        lzin.put(ch);
+    }
     // the FSM states
     private FSMState s_INIT = new FSMState() {
         public FSMState next() {
@@ -100,10 +103,15 @@ public class TokenReader implements StreamReader<Token> {
                 case '>': AA(ch); return s_GT;
                 case '.': AA(ch); return s_DOT;
                 case ':': AA(ch); return s_COLON;
+                case '\'': adv(); return s_STRING;
             }
             if (Character.isLetter(ch)) {
                 AA(ch);
                 return  s_ID;
+            }
+            if (Character.isDigit(ch)) {
+                AA(ch);
+                return s_INT;
             }
             // ignore anything else
             adv();
@@ -167,7 +175,7 @@ public class TokenReader implements StreamReader<Token> {
             tok.lno = lno();
             if(Character.isLetter(ch)||Character.isDigit(ch)||ch=='_') {
                 AA(ch);
-                return s_ID;
+                return this;
             }
             String id = (tok.str.toString());
             Token.Val rwval = rwtab.get(id.toUpperCase());
@@ -180,6 +188,89 @@ public class TokenReader implements StreamReader<Token> {
             return null;
         }
     };
+
+    private FSMState s_STRING = new FSMState() {
+        public FSMState next() {
+            Character ch = cur();
+            tok.lno = lno();
+            if(ch == '\'') {
+                adv();
+                return s_QQ;
+            }
+            if(isPrint(ch)) {
+                AA(ch);
+                return this;
+            }
+            AAV(ch, Token.Val.ESTRING);
+            return null;
+        }
+
+        private boolean isPrint(Character ch) {
+            return (ch != null && ' ' <= ch && ch <='~');
+        }
+    };
+
+    private FSMState s_QQ = new FSMState() {
+        public FSMState next() {
+            Character ch = cur();
+            tok.lno = lno();
+            if(ch == '\'') {
+                AA(ch);
+                return s_STRING;
+            }
+            VAL(Token.Val.STRING);
+            return null;
+        }
+
+    };
+
+    private FSMState s_INT = new FSMState () {
+        public FSMState next() {
+            Character ch = cur();
+            tok.lno = lno();
+            if(Character.isDigit(ch)) {
+                AA(ch);
+                return this;
+            }
+            if(ch == '.') {
+                adv();
+                return s_posReal;
+            }
+            VAL(Token.Val.INT);
+            return null;
+        }
+    };
+
+    private FSMState s_posReal = new FSMState () {
+        public FSMState next() {
+            Character ch = cur();
+            tok.lno = lno();
+            if(Character.isDigit(ch)) {
+                APPEND('.');
+                AA(ch);
+                return s_REAL;
+            }
+            VAL(Token.Val.INT);
+            PUT('.');
+            return null;
+        }
+    };
+
+    private FSMState s_REAL = new FSMState () {
+        public FSMState next() {
+            Character ch = cur();
+            tok.lno = lno();
+            if(Character.isDigit(ch)) {
+                AA(ch);
+                return this;
+            }
+            VAL(Token.Val.REAL);
+            return null;
+        }
+    };
+
+    
+
 //     private FSMState
 
     public Token read() {
