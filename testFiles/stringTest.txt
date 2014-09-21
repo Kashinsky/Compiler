@@ -1,0 +1,5 @@
+'test string'
+'i can handle ''extra'' quotes'
+'9set asdf 230.6 look at a11 th353 num63r5'
+'%err qwr%24 214f% afk;'
+'wouldnt it be awkward if i just stopped typ

@@ -104,6 +104,7 @@ public class TokenReader implements StreamReader<Token> {
                 case '.': AA(ch); return s_DOT;
                 case ':': AA(ch); return s_COLON;
                 case '\'': adv(); return s_STRING;
+                case '{': tok.lno = lno(); adv(); return s_COMMENT;
             }
             if (Character.isLetter(ch)) {
                 AA(ch);
@@ -113,9 +114,13 @@ public class TokenReader implements StreamReader<Token> {
                 AA(ch);
                 return s_INT;
             }
-            // ignore anything else
-            adv();
-            return this; // ... could loop instead ...
+            if (Character.isWhitespace(ch)) {
+                adv();
+                return this;
+            } else {
+                AAV(ch,Token.Val.ERROR);
+                return null;
+            }
         }
     };
 
@@ -177,8 +182,8 @@ public class TokenReader implements StreamReader<Token> {
                 AA(ch);
                 return this;
             }
-            String id = (tok.str.toString());
-            Token.Val rwval = rwtab.get(id.toUpperCase());
+            String id = (tok.str.toString()).toUpperCase();
+            Token.Val rwval = rwtab.get(id);
             if(rwval == null) {
                 VAL(Token.Val.ID);
                 return null;
@@ -269,6 +274,38 @@ public class TokenReader implements StreamReader<Token> {
         }
     };
 
+    private FSMState s_COMMENT = new FSMState () {
+        public FSMState next() {
+            Character ch = cur();
+            switch(ch) {
+                case NL: adv(); return s_NACOMMENT;
+                case '}': adv(); VAL(Token.Val.COMMENT); return null;
+            }
+            if(ch == null) {
+                VAL(Token.Val.ECOMMENT);
+                return null;
+            }
+            AA(ch);
+            return this;
+        }
+    };
+
+    private FSMState s_NACOMMENT = new FSMState () {
+        public FSMState next() {
+            Character ch = cur();
+            if(ch == null) {
+                VAL(Token.Val.ECOMMENT);
+                return null;
+            }
+            if(ch == '}') {
+                adv();
+                VAL(Token.Val.COMMENT);
+                return null;
+            }
+            adv();
+            return this;
+        }
+    };
     
 
 //     private FSMState
