@@ -1,0 +1,30 @@
++ - * / = < > ( ) [ ] . , ; : ^
+
+<> <= <12 >< <<
+
+>> >= >e>> >=><
+
+. .. ... .... .
+
+:asdf := :: :=: =: ::==
+
+and 
+array   
+begin   
+case    
+const
+do
+downto
+div 
+else    
+end
+file    for function    goto    if
+in  label   mod nil not
+    of  or  otherwise   packed  procedure
+    program record  repeat  set then    
+    to  type    until   var while
+    with
+a nd
+o r
+n o t
+             
